@@ -1,8 +1,12 @@
 ﻿using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
+using UnityEngine.UI;
 
-public class MarkerManagerScript : MonoBehaviour {
+public class MarkerManagerScript : MonoBehaviour
+{
+
+	private Rigidbody broomRigidBody;
 
 	public AROrigin arOriginScript;
 	public GameObject ringMarker;
@@ -10,8 +14,8 @@ public class MarkerManagerScript : MonoBehaviour {
 	public GameObject broom;
 	public CurlingStoneScript curlingScript;
 
-	public Vector3 lastBroomPosition;
-	public Vector3 currentBroomPosition;
+	public Vector3 lastBroomMarkerPosition;
+	public Vector3 currentBroomMarkerPosition;
 	public float broomSpeed;
 
 
@@ -21,44 +25,70 @@ public class MarkerManagerScript : MonoBehaviour {
 	public bool insideRed;
 	public bool insideWhite;
 	public bool insideBlue;
-	public bool checkForScore = true;
+	public bool checkForScore;
 	public float score;
+	public bool front;
 
-	void Awake(){
+	public Vector3 originalBroomPosition;
+	public Vector3 currentBroomPosition;
+	public Vector3 broomVelocity;
+
+	public Text scoreText;
+
+	void Awake ()
+	{
 		arOriginScript = GameObject.Find ("Scene root").GetComponent<AROrigin> ();
 		ringMarker = GameObject.Find ("RingMarker");
 		broomMarker = GameObject.Find ("BroomMarker");
-		broom = GameObject.Find ("Broom");
-		lastBroomPosition = broomMarker.transform.position;
+		broom = GameObject.FindGameObjectWithTag ("Broom");
+		lastBroomMarkerPosition = broomMarker.transform.position;
 		curlingScript = GameObject.Find ("CurlingStone").GetComponent<CurlingStoneScript> ();
 		redRingScript = GameObject.Find ("InnerRing").GetComponent<RingScript> ();
 		whiteRingScript = GameObject.Find ("MiddleRing").GetComponent<RingScript> ();
 		blueRingScript = GameObject.Find ("OuterRing").GetComponent<RingScript> ();
-
+		broomRigidBody = broom.GetComponent<Rigidbody> ();
+		scoreText = GameObject.Find ("ScoreText").GetComponent<Text>();
 	}
 
-	void Update(){
+	void FixedUpdate ()
+	{
 
 		//Ensure RingMarker is always the base marker
 		if (ringMarker.activeSelf) {
-			arOriginScript.SetBaseMarker(ringMarker.GetComponent<ARTrackedObject> ().GetMarker ());
+			arOriginScript.SetBaseMarker (ringMarker.GetComponent<ARTrackedObject> ().GetMarker ());
 		}
 
-		currentBroomPosition = broomMarker.transform.position;
+		if (!curlingScript.fire) {
+			originalBroomPosition = broom.transform.position;
+		}
+
+		currentBroomMarkerPosition = broomMarker.transform.position;
 		//Check if a significant movement on the tracker was registered
-		if (Mathf.Abs (lastBroomPosition.x - currentBroomPosition.x) > 0.02) {
-			//Check direction of the movement on the X axis
-			if (currentBroomPosition.x > lastBroomPosition.x) {
-				broom.transform.position = new Vector3 (broom.transform.position.x + broomSpeed, broom.transform.position.y, broom.transform.position.z);
+		if (Mathf.Abs (lastBroomMarkerPosition.x - currentBroomMarkerPosition.x) > 0.01 && curlingScript.fire) {
+			if (front) {
+				broomRigidBody.velocity = new Vector3 (-broomSpeed, broomRigidBody.velocity.y, broomRigidBody.velocity.z);
 			} else {
-				broom.transform.position = new Vector3 (broom.transform.position.x - broomSpeed, broom.transform.position.y, broom.transform.position.z);
+				broomRigidBody.velocity = new Vector3 (broomSpeed, broomRigidBody.velocity.y, broomRigidBody.velocity.z);
 			}
 
 			if (curlingScript.fire) {
 				curlingScript.speed += 0.001f;
 			}
+
+		} else {
+			broomRigidBody.velocity = new Vector3 (0, broomRigidBody.velocity.y, broomRigidBody.velocity.z);
 		}
-		lastBroomPosition = currentBroomPosition;
+
+		if (broom.transform.position.x <= originalBroomPosition.x - 0.002f) {
+			front = false;
+		}
+		if (broom.transform.position.x >= originalBroomPosition.x + 0.002f) {
+			front = true;
+		}
+
+		lastBroomMarkerPosition = currentBroomMarkerPosition;
+		currentBroomPosition = broom.transform.position;
+		broomVelocity = broomRigidBody.velocity;
 
 		if (curlingScript.stopped && checkForScore) {
 			checkForScore = false;
@@ -73,5 +103,7 @@ public class MarkerManagerScript : MonoBehaviour {
 				score = 50.0f;
 			}
 		}
+
+		scoreText.text = "Score: " + score;
 	}
 }

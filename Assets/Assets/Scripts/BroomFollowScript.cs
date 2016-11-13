@@ -20,7 +20,7 @@ public class BroomFollowScript : MonoBehaviour {
 
 		curlingPos = curlingStone.transform.position;
 		if (curlingScript.fire) {
-			rigidBody.velocity = new Vector3 (0, 0, curlingScript.speed);
+			rigidBody.velocity = new Vector3 (rigidBody.velocity.x, rigidBody.velocity.y, curlingScript.speed);
 		}
 	}
 }
