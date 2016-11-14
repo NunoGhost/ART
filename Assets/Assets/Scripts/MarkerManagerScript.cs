@@ -7,15 +7,18 @@ public class MarkerManagerScript : MonoBehaviour
 {
 
 	private Rigidbody broomRigidBody;
+	private Animator broomAnimator;
 
 	public AROrigin arOriginScript;
 	public GameObject ringMarker;
 	public GameObject broomMarker;
 	public GameObject broom;
+	public BroomFollowScript broomFollowScript;
 	public CurlingStoneScript curlingScript;
 
 	public Vector3 lastBroomMarkerPosition;
 	public Vector3 currentBroomMarkerPosition;
+	public float markerPosDiff;
 	public float broomSpeed;
 
 
@@ -28,6 +31,7 @@ public class MarkerManagerScript : MonoBehaviour
 	public bool checkForScore;
 	public float score;
 	public bool front;
+	public bool sweeping;
 
 	public Vector3 originalBroomPosition;
 	public Vector3 currentBroomPosition;
@@ -41,6 +45,8 @@ public class MarkerManagerScript : MonoBehaviour
 		ringMarker = GameObject.Find ("RingMarker");
 		broomMarker = GameObject.Find ("BroomMarker");
 		broom = GameObject.FindGameObjectWithTag ("Broom");
+		broomAnimator = broom.transform.FindChild("broom").gameObject.GetComponent<Animator> ();
+		broomFollowScript = broom.GetComponent<BroomFollowScript> ();
 		lastBroomMarkerPosition = broomMarker.transform.position;
 		curlingScript = GameObject.Find ("CurlingStone").GetComponent<CurlingStoneScript> ();
 		redRingScript = GameObject.Find ("InnerRing").GetComponent<RingScript> ();
@@ -62,24 +68,31 @@ public class MarkerManagerScript : MonoBehaviour
 			originalBroomPosition = broom.transform.position;
 		}
 
-		currentBroomMarkerPosition = broomMarker.transform.position;
+		currentBroomMarkerPosition = broomMarker.transform.localPosition;
 		//Check if a significant movement on the tracker was registered
-		if (Mathf.Abs (lastBroomMarkerPosition.x - currentBroomMarkerPosition.x) > 0.01 && curlingScript.fire) {
-			if (front) {
-				broomRigidBody.velocity = new Vector3 (-broomSpeed, broomRigidBody.velocity.y, broomRigidBody.velocity.z);
+		if (Mathf.Abs (lastBroomMarkerPosition.x - currentBroomMarkerPosition.x) > markerPosDiff && broomFollowScript.follow) {
+			/*if (front) {
+				//broomRigidBody.velocity = new Vector3 (-broomSpeed, broomRigidBody.velocity.y, broomRigidBody.velocity.z);
+				broomRigidBody.AddRelativeForce (-broomSpeed,0,0);
 			} else {
-				broomRigidBody.velocity = new Vector3 (broomSpeed, broomRigidBody.velocity.y, broomRigidBody.velocity.z);
+				//broomRigidBody.velocity = new Vector3 (broomSpeed, broomRigidBody.velocity.y, broomRigidBody.velocity.z);
+				broomRigidBody.AddRelativeForce (broomSpeed,0,0);
 			}
 
 			if (curlingScript.fire) {
 				curlingScript.speed += 0.001f;
-			}
+			}*/
+
+			broomAnimator.SetBool ("Sweeping", true);
+			sweeping = true;
 
 		} else {
-			broomRigidBody.velocity = new Vector3 (0, broomRigidBody.velocity.y, broomRigidBody.velocity.z);
+			//broomRigidBody.velocity = new Vector3 (0, broomRigidBody.velocity.y, broomRigidBody.velocity.z);
+			broomAnimator.SetBool ("Sweeping", false);
+			sweeping = false;
 		}
 
-		if (broom.transform.position.x <= originalBroomPosition.x - 0.002f) {
+		/*if (broom.transform.position.x <= originalBroomPosition.x - 0.002f) {
 			front = false;
 		}
 		if (broom.transform.position.x >= originalBroomPosition.x + 0.002f) {
@@ -88,7 +101,7 @@ public class MarkerManagerScript : MonoBehaviour
 
 		lastBroomMarkerPosition = currentBroomMarkerPosition;
 		currentBroomPosition = broom.transform.position;
-		broomVelocity = broomRigidBody.velocity;
+		broomVelocity = broomRigidBody.velocity;*/
 
 		if (curlingScript.stopped && checkForScore) {
 			checkForScore = false;
@@ -98,7 +111,7 @@ public class MarkerManagerScript : MonoBehaviour
 			} else if (whiteRingScript.inside) {
 				Debug.Log ("White points");
 				score = 100.0f;
-			} else {
+			} else if(blueRingScript.inside){
 				Debug.Log ("Blue points");
 				score = 50.0f;
 			}
